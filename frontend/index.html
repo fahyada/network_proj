@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="bg-slate-900 flex items-center justify-center h-screen text-white font-sans">
+
+    <div class="bg-slate-800 p-8 rounded-2xl shadow-2xl w-96 border border-slate-700 text-center">
+        <h1 class="text-3xl font-bold mb-2 text-blue-500">Enter Chat</h1>
+        <p class="text-slate-400 mb-6 text-sm">Choose your avatar & name</p>
+
+        <!-- Avatar Grid -->
+        <div id="avatar-grid" class="grid grid-cols-4 gap-3 mb-6">
+            <!-- Avatars injected by JS -->
+        </div>
+
+        <input type="text" id="username" placeholder="Username" 
+               class="w-full p-3 rounded-xl bg-slate-900 border border-slate-600 mb-4 focus:border-blue-500 outline-none text-white">
+        
+        <button onclick="attemptLogin()" 
+                class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-bold transition">
+            Join
+        </button>
+        <p id="error-msg" class="text-red-400 mt-3 text-sm hidden"></p>
+    </div>
+
+    <script>
+        const socket = io();
+        let selectedAvatar = '';
+
+        // Avatars to choose from
+        const avatars = [
+            'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
+            'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka',
+            'https://api.dicebear.com/7.x/bottts/svg?seed=Zoom',
+            'https://api.dicebear.com/7.x/bottts/svg?seed=Robo',
+            'https://api.dicebear.com/7.x/notionists/svg?seed=Loki',
+            'https://api.dicebear.com/7.x/notionists/svg?seed=Mimi',
+            'https://api.dicebear.com/7.x/micah/svg?seed=Boo',
+            'https://api.dicebear.com/7.x/micah/svg?seed=Bear'
+        ];
+
+        // Render Avatars
+        const grid = document.getElementById('avatar-grid');
+        selectedAvatar = avatars[0]; // Default
+
+        avatars.forEach((url, index) => {
+            const img = document.createElement('img');
+            img.src = url;
+            img.className = `w-12 h-12 rounded-full cursor-pointer border-2 hover:scale-110 transition ${index === 0 ? 'border-blue-500 bg-slate-700' : 'border-transparent'}`;
+            img.onclick = () => {
+                selectedAvatar = url;
+                // Update styles
+                Array.from(grid.children).forEach(c => c.classList.replace('border-blue-500', 'border-transparent'));
+                Array.from(grid.children).forEach(c => c.classList.remove('bg-slate-700'));
+                img.classList.replace('border-transparent', 'border-blue-500');
+                img.classList.add('bg-slate-700');
+            };
+            grid.appendChild(img);
+        });
+
+        function attemptLogin() {
+            const username = document.getElementById('username').value.trim();
+            const err = document.getElementById('error-msg');
+            
+            if (!username) {
+                err.textContent = "Username is required";
+                err.classList.remove('hidden');
+                return;
+            }
+
+            // Check availability via Socket
+            socket.emit('check_username', username, (response) => {
+                if (response.available) {
+                    // Save to Session Storage and Redirect
+                    sessionStorage.setItem('chat_username', username);
+                    sessionStorage.setItem('chat_avatar', selectedAvatar);
+                    window.location.href = '/chat.html';
+                } else {
+                    err.textContent = "Username already taken";
+                    err.classList.remove('hidden');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
