@@ -132,6 +132,20 @@ createApp({
             return messages[key] || [];
         });
 
+        // Members of the currently active group (array of usernames)
+        const currentGroupMembers = computed(() => {
+            if (!activeChat.value || activeChat.value.type !== 'group') return [];
+            const grp = groups.value.find(g => g.name === activeChat.value.id);
+            return grp ? grp.members : [];
+        });
+
+        // Resolve avatar URL for a username (fallback if unknown)
+        const getAvatar = (username) => {
+            if (username === myUsername.value) return myAvatar.value;
+            const u = users.value.find(x => x.username === username);
+            return u ? u.avatar : 'https://via.placeholder.com/40/334155/ffffff?text=?';
+        };
+
         // --- SOCKET EVENTS ---
 
         socket.on('update_users', (list) => {
@@ -170,6 +184,7 @@ createApp({
         return {
             myUsername, myAvatar, myStatus, updateStatus,
             users, groups, activeChat, currentMessages,
+            currentGroupMembers, getAvatar,
             selectChat, createGroup, joinGroup, isActive,
             inputMessage, sendMessage, sendImage,
             handleTyping, typingInfo, isMember, getStatusColor
